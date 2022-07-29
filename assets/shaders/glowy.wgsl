@@ -26,18 +26,9 @@ fn refract(I: vec3<f32>, N: vec3<f32>, eta: f32) -> vec3<f32> {
 
 let TAU: f32 = 6.28318530717958647692528676655900577;
 
-// Version from Freya's video
-fn dir_to_rectilinear(dir: vec3<f32>) -> vec2<f32> {
-    let x = atan2(dir.z, dir.x) / TAU + 0.5; // 0-1
-    let y = dir.y * 0.5 + 0.5; // 0-1
-    return vec2<f32>(x, y);
-}
-
-// More uniform mapping at poles for equirectangular projection 
-// https://www.desmos.com/calculator/f3nqixjjdf
 fn dir_to_equirectangular(dir: vec3<f32>) -> vec2<f32> {
     let x = atan2(dir.z, dir.x) / TAU + 0.5; // 0-1
-    let y = acos(-dir.y) / PI; // 0-1
+    let y = acos(dir.y) / PI; // 0-1
     return vec2<f32>(x, y);
 }
 
@@ -54,16 +45,16 @@ fn fragment(in: FragmentInput) -> @location(0) vec4<f32> {
     
     col = mix(col, vec3(0.5, 0.1, 0.0), glow);
 
-    let bump_coords = dir_to_equirectangular(N * vec3(1.0,0.5,1.0) + vec3(0.0,0.5,0.0));
+    let bump_coords = dir_to_equirectangular(N * vec3(1.0,-0.5,1.0) - vec3(0.0,0.5,0.0));
     let bump = textureSample(texture, texture_sampler, bump_coords).r;
 
-    var reflect_coords = dir_to_equirectangular(reflect(V, N));
+    var reflect_coords = dir_to_equirectangular(reflect(-V, N));
     let reflection = textureSample(texture, texture_sampler, reflect_coords).rgb;
 
-    var refract_coords = dir_to_equirectangular(refract(V, -N + bump * 2.0, 1.0/1.52));
+    var refract_coords = dir_to_equirectangular(refract(-V, N + bump * 2.0, 1.0/1.52));
     let refraction = textureSample(texture, texture_sampler, refract_coords).rgb;
 
     col = (col * refraction) + reflection * (fresnel + 0.05);
 
-    return tone_mapping(vec4(vec3(col), 1.0));
+    return tone_mapping(vec4(col, 1.0));
 }
