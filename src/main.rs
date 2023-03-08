@@ -37,7 +37,10 @@ fn setup(
 
     // plane
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Plane { size: 100.0 })),
+        mesh: meshes.add(Mesh::from(shape::Plane {
+            size: 100.0,
+            ..default()
+        })),
         material: materials.add(Color::rgb(0.1, 0.1, 0.1).into()),
         ..default()
     });
@@ -70,7 +73,7 @@ fn setup(
                 material: material.clone(),
                 ..default()
             })
-            .add_children(|parent| {
+            .with_children(|parent| {
                 // child light
                 parent.spawn(PointLightBundle {
                     point_light: PointLight {

@@ -1,12 +1,9 @@
 #import bevy_pbr::mesh_view_bindings
 #import bevy_pbr::mesh_bindings
+#import bevy_core_pipeline::tonemapping
 
 #import bevy_pbr::pbr_types
 #import bevy_pbr::utils
-#import bevy_pbr::clustered_forward
-#import bevy_pbr::lighting
-#import bevy_pbr::shadows
-#import bevy_pbr::pbr_functions
 
 @group(1) @binding(0)
 var texture: texture_2d<f32>;
@@ -24,7 +21,7 @@ fn refract(I: vec3<f32>, N: vec3<f32>, eta: f32) -> vec3<f32> {
     return eta * I - (eta * dot(N, I) + sqrt(k)) * N;
 }
 
-let TAU: f32 = 6.28318530717958647692528676655900577;
+const TAU: f32 = 6.28318530717958647692528676655900577;
 
 fn dir_to_equirectangular(dir: vec3<f32>) -> vec2<f32> {
     let x = atan2(dir.z, dir.x) / TAU + 0.5; // 0-1
