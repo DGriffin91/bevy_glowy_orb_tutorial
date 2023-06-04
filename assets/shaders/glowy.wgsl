@@ -5,16 +5,36 @@
 #import bevy_pbr::pbr_types
 #import bevy_pbr::utils
 
+#ifdef DEFERRED_PREPASS
+#import bevy_pbr::pbr_functions
+#import bevy_pbr::pbr_deferred_types
+#import bevy_pbr::pbr_deferred_functions
+#endif
+
 @group(1) @binding(0)
 var texture: texture_2d<f32>;
 @group(1) @binding(1)
 var texture_sampler: sampler;
 
+#ifdef DEFERRED_PREPASS
+struct FragmentInput {
+    @builtin(front_facing) is_front: bool,
+    @builtin(position) frag_coord: vec4<f32>,
+    @location(0) uv: vec2<f32>,
+    @location(1) world_normal: vec3<f32>,
+    @location(3) world_position: vec4<f32>,
+    @location(4) previous_world_position: vec4<f32>,
+};
+struct DeferredFragmentOutput {
+    @location(2) deferred: vec4<u32>,
+}
+#else
 struct FragmentInput {
     @builtin(front_facing) is_front: bool,
     @builtin(position) frag_coord: vec4<f32>,
     #import bevy_pbr::mesh_vertex_output
 };
+#endif //DEFERRED_PREPASS
 
 fn refract(I: vec3<f32>, N: vec3<f32>, eta: f32) -> vec3<f32> {
     let k = max((1.0 - eta * eta * (1.0 - dot(N, I) * dot(N, I))), 0.0);
@@ -30,7 +50,12 @@ fn dir_to_equirectangular(dir: vec3<f32>) -> vec2<f32> {
 }
 
 @fragment
+#ifdef DEFERRED_PREPASS
+fn fragment(in: FragmentInput) -> DeferredFragmentOutput {
+#else
 fn fragment(in: FragmentInput) -> @location(0) vec4<f32> {
+#endif
+
     var N = normalize(in.world_normal);
     var V = normalize(view.world_position.xyz - in.world_position.xyz);
     let NdotV = max(dot(N, V), 0.0001);
@@ -53,5 +78,15 @@ fn fragment(in: FragmentInput) -> @location(0) vec4<f32> {
 
     col = (col * refraction) + reflection * (fresnel + 0.05);
 
-    return tone_mapping(vec4(col, 1.0));
+#ifdef DEFERRED_PREPASS
+    var pbr_input = pbr_input_new();
+    pbr_input.material.emissive = vec4(col, 1.0);
+    pbr_input.material.base_color = vec4(0.0);
+    pbr_input.material.reflectance = 0.0;
+    var out: DeferredFragmentOutput;
+    out.deferred = deferred_gbuffer_from_pbr_input(pbr_input, in.frag_coord.z);
+    return out;
+#else
+    return vec4(col, 1.0);
+#endif
 }
