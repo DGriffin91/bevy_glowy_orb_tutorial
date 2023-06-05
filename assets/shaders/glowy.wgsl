@@ -9,6 +9,7 @@
 #import bevy_pbr::pbr_functions
 #import bevy_pbr::pbr_deferred_types
 #import bevy_pbr::pbr_deferred_functions
+#import bevy_pbr::prepass_io
 #endif
 
 @group(1) @binding(0)
@@ -16,19 +17,7 @@ var texture: texture_2d<f32>;
 @group(1) @binding(1)
 var texture_sampler: sampler;
 
-#ifdef DEFERRED_PREPASS
-struct FragmentInput {
-    @builtin(front_facing) is_front: bool,
-    @builtin(position) frag_coord: vec4<f32>,
-    @location(0) uv: vec2<f32>,
-    @location(1) world_normal: vec3<f32>,
-    @location(3) world_position: vec4<f32>,
-    @location(4) previous_world_position: vec4<f32>,
-};
-struct DeferredFragmentOutput {
-    @location(2) deferred: vec4<u32>,
-}
-#else
+#ifndef DEFERRED_PREPASS
 struct FragmentInput {
     @builtin(front_facing) is_front: bool,
     @builtin(position) frag_coord: vec4<f32>,
@@ -51,7 +40,7 @@ fn dir_to_equirectangular(dir: vec3<f32>) -> vec2<f32> {
 
 @fragment
 #ifdef DEFERRED_PREPASS
-fn fragment(in: FragmentInput) -> DeferredFragmentOutput {
+fn fragment(in: FragmentInput) -> FragmentOutput {
 #else
 fn fragment(in: FragmentInput) -> @location(0) vec4<f32> {
 #endif
@@ -80,10 +69,9 @@ fn fragment(in: FragmentInput) -> @location(0) vec4<f32> {
 
 #ifdef DEFERRED_PREPASS
     var pbr_input = pbr_input_new();
-    pbr_input.material.emissive = vec4(col, 1.0);
-    pbr_input.material.base_color = vec4(0.0);
-    pbr_input.material.reflectance = 0.0;
-    var out: DeferredFragmentOutput;
+    pbr_input.material.base_color = vec4(col, 1.0);
+    pbr_input.material.flags |= STANDARD_MATERIAL_FLAGS_UNLIT_BIT;
+    var out: FragmentOutput;
     out.deferred = deferred_gbuffer_from_pbr_input(pbr_input, in.frag_coord.z);
     return out;
 #else
