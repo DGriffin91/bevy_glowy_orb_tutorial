@@ -134,7 +134,7 @@ impl Material for GlowyMaterial {
         "shaders/glowy.wgsl".into()
     }
 
-    fn prepass_fragment_shader() -> ShaderRef {
+    fn deferred_fragment_shader() -> ShaderRef {
         "shaders/glowy.wgsl".into()
     }
 }
