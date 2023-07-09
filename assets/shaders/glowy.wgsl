@@ -1,20 +1,15 @@
-#import bevy_pbr::mesh_view_bindings
+#import bevy_pbr::mesh_view_bindings view
 #import bevy_pbr::mesh_bindings
-#import bevy_core_pipeline::tonemapping
+#import bevy_pbr::mesh_vertex_output MeshVertexOutput
+#import bevy_core_pipeline::tonemapping tone_mapping
 
 #import bevy_pbr::pbr_types
-#import bevy_pbr::utils
+#import bevy_pbr::utils PI
 
 @group(1) @binding(0)
 var texture: texture_2d<f32>;
 @group(1) @binding(1)
 var texture_sampler: sampler;
-
-struct FragmentInput {
-    @builtin(front_facing) is_front: bool,
-    @builtin(position) frag_coord: vec4<f32>,
-    #import bevy_pbr::mesh_vertex_output
-};
 
 fn refract(I: vec3<f32>, N: vec3<f32>, eta: f32) -> vec3<f32> {
     let k = max((1.0 - eta * eta * (1.0 - dot(N, I) * dot(N, I))), 0.0);
@@ -30,7 +25,7 @@ fn dir_to_equirectangular(dir: vec3<f32>) -> vec2<f32> {
 }
 
 @fragment
-fn fragment(in: FragmentInput) -> @location(0) vec4<f32> {
+fn fragment(in: MeshVertexOutput) -> @location(0) vec4<f32> {
     var N = normalize(in.world_normal);
     var V = normalize(view.world_position.xyz - in.world_position.xyz);
     let NdotV = max(dot(N, V), 0.0001);
@@ -53,5 +48,5 @@ fn fragment(in: FragmentInput) -> @location(0) vec4<f32> {
 
     col = (col * refraction) + reflection * (fresnel + 0.05);
 
-    return tone_mapping(vec4(col, 1.0));
+    return tone_mapping(vec4(col, 1.0), view.color_grading);
 }
