@@ -4,11 +4,11 @@ use bevy::{
     asset::ChangeWatcher,
     core_pipeline::{
         fxaa::Fxaa,
-        prepass::{DeferredPrepass, DepthPrepass, MotionVectorPrepass, NormalPrepass},
+        prepass::{DeferredPrepass, DepthPrepass},
     },
     pbr::{DefaultOpaqueRendererMethod, OpaqueRendererMethod},
     prelude::*,
-    reflect::TypeUuid,
+    reflect::{TypePath, TypeUuid},
     render::render_resource::{AsBindGroup, ShaderRef},
 };
 
@@ -21,19 +21,14 @@ fn main() {
         .insert_resource(Msaa::Off)
         .insert_resource(DefaultOpaqueRendererMethod(OpaqueRendererMethod::Deferred))
         .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
-        .add_plugins(
-            DefaultPlugins
-                .set(AssetPlugin {
-                    watch_for_changes: ChangeWatcher::with_delay(Duration::from_secs_f32(0.1)),
-                    ..default()
-                })
-                .set(WindowPlugin {
-                    primary_window: Some(Window { ..default() }),
-                    ..default()
-                }),
-        )
-        .add_plugin(CameraControllerPlugin)
-        .add_plugin(MaterialPlugin::<GlowyMaterial>::default())
+        .add_plugins(DefaultPlugins.set(AssetPlugin {
+            watch_for_changes: ChangeWatcher::with_delay(Duration::from_millis(200)),
+            ..default()
+        }))
+        .add_plugins((
+            CameraControllerPlugin,
+            MaterialPlugin::<GlowyMaterial>::default(),
+        ))
         .add_systems(Startup, setup)
         .add_systems(Update, switch_mode)
         .run();
@@ -46,6 +41,7 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
+    println!("Press 1 for deferred\nPress 2 for forward");
     // Load Texture
     let env_texture = asset_server.load("textures/stone_alley_02_1k.hdr");
 
@@ -106,29 +102,29 @@ fn setup(
     }
 
     // camera
-    commands
-        .spawn((
-            Camera3dBundle {
-                camera: Camera {
-                    hdr: true,
-                    ..default()
-                },
-                transform: Transform::from_xyz(8.0, 5.0, 8.0)
-                    .looking_at(Vec3::new(0.0, 0.5, 0.0), Vec3::Y),
+    commands.spawn((
+        Camera3dBundle {
+            camera: Camera {
+                hdr: true,
                 ..default()
             },
-            DepthPrepass,
-            MotionVectorPrepass,
-            DeferredPrepass,
-            Fxaa::default(),
-        ))
-        .insert(CameraController {
+            transform: Transform::from_xyz(8.0, 5.0, 8.0)
+                .looking_at(Vec3::new(0.0, 0.5, 0.0), Vec3::Y),
+            ..default()
+        },
+        CameraController {
             orbit_mode: true,
             orbit_focus: Vec3::new(0.0, 0.5, 0.0),
             ..default()
-        });
+        },
+        DepthPrepass,
+        DeferredPrepass,
+        Fxaa::default(),
+    ));
 }
 
+/// The Material trait is very configurable, but comes with sensible defaults for all methods.
+/// You only need to implement functions for features that need non-default behavior. See the Material api docs for details!
 impl Material for GlowyMaterial {
     fn fragment_shader() -> ShaderRef {
         "shaders/glowy.wgsl".into()
@@ -139,7 +135,8 @@ impl Material for GlowyMaterial {
     }
 }
 
-#[derive(AsBindGroup, Debug, Clone, TypeUuid)]
+// This is the struct that will be passed to your shader
+#[derive(AsBindGroup, Debug, Clone, TypeUuid, TypePath)]
 #[uuid = "717f64fe-6844-4822-8926-e0ed374294c8"]
 pub struct GlowyMaterial {
     #[texture(0)]
@@ -161,9 +158,7 @@ fn switch_mode(
         for _ in gmaterials.iter_mut() {}
         for _ in materials.iter_mut() {}
         for camera in &cameras {
-            commands.entity(camera).remove::<NormalPrepass>();
             commands.entity(camera).insert(DepthPrepass);
-            commands.entity(camera).insert(MotionVectorPrepass);
             commands.entity(camera).insert(DeferredPrepass);
         }
     }
@@ -173,9 +168,7 @@ fn switch_mode(
         for _ in gmaterials.iter_mut() {}
         for _ in materials.iter_mut() {}
         for camera in &cameras {
-            commands.entity(camera).remove::<NormalPrepass>();
             commands.entity(camera).remove::<DepthPrepass>();
-            commands.entity(camera).remove::<MotionVectorPrepass>();
             commands.entity(camera).remove::<DeferredPrepass>();
         }
     }

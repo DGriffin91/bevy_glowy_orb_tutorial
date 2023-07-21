@@ -1,29 +1,16 @@
-#import bevy_pbr::mesh_view_bindings
+#import bevy_pbr::mesh_view_bindings view
 #import bevy_pbr::mesh_bindings
-#import bevy_core_pipeline::tonemapping
+#import bevy_pbr::mesh_vertex_output as mesh_vertex_output
+#import bevy_pbr::prepass_io as prepass_io
 
-#import bevy_pbr::pbr_types
-#import bevy_pbr::utils
-
-#ifdef DEFERRED_PREPASS
-#import bevy_pbr::pbr_functions
-#import bevy_pbr::pbr_deferred_types
-#import bevy_pbr::pbr_deferred_functions
-#import bevy_pbr::prepass_io
-#endif
+#import bevy_pbr::pbr_deferred_functions as pbr_deferred_functions
+#import bevy_pbr::pbr_types as pbr_types
+#import bevy_pbr::utils PI
 
 @group(1) @binding(0)
 var texture: texture_2d<f32>;
 @group(1) @binding(1)
 var texture_sampler: sampler;
-
-#ifndef DEFERRED_PREPASS
-struct FragmentInput {
-    @builtin(front_facing) is_front: bool,
-    @builtin(position) frag_coord: vec4<f32>,
-    #import bevy_pbr::mesh_vertex_output
-};
-#endif //DEFERRED_PREPASS
 
 fn refract(I: vec3<f32>, N: vec3<f32>, eta: f32) -> vec3<f32> {
     let k = max((1.0 - eta * eta * (1.0 - dot(N, I) * dot(N, I))), 0.0);
@@ -40,11 +27,10 @@ fn dir_to_equirectangular(dir: vec3<f32>) -> vec2<f32> {
 
 @fragment
 #ifdef DEFERRED_PREPASS
-fn fragment(in: FragmentInput) -> FragmentOutput {
+fn fragment(in: prepass_io::FragmentInput) -> prepass_io::FragmentOutput {
 #else
-fn fragment(in: FragmentInput) -> @location(0) vec4<f32> {
+fn fragment(in: mesh_vertex_output::MeshVertexOutput) -> @location(0) vec4<f32> {
 #endif
-
     var N = normalize(in.world_normal);
     var V = normalize(view.world_position.xyz - in.world_position.xyz);
     let NdotV = max(dot(N, V), 0.0001);
@@ -68,11 +54,11 @@ fn fragment(in: FragmentInput) -> @location(0) vec4<f32> {
     col = (col * refraction) + reflection * (fresnel + 0.05);
 
 #ifdef DEFERRED_PREPASS
-    var pbr_input = pbr_input_new();
+    var pbr_input = pbr_types::pbr_input_new();
     pbr_input.material.base_color = vec4(col, 1.0);
-    pbr_input.material.flags |= STANDARD_MATERIAL_FLAGS_UNLIT_BIT;
-    var out: FragmentOutput;
-    out.deferred = deferred_gbuffer_from_pbr_input(pbr_input, in.frag_coord.z);
+    pbr_input.material.flags |= pbr_types::STANDARD_MATERIAL_FLAGS_UNLIT_BIT;
+    var out: prepass_io::FragmentOutput;
+    out.deferred = pbr_deferred_functions::deferred_gbuffer_from_pbr_input(pbr_input, in.position.z);
     return out;
 #else
     return vec4(col, 1.0);
