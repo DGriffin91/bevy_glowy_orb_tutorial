@@ -55,10 +55,12 @@ fn fragment(in: mesh_vertex_output::MeshVertexOutput) -> @location(0) vec4<f32> 
 
 #ifdef DEFERRED_PREPASS
     var pbr_input = pbr_types::pbr_input_new();
+    pbr_input.frag_coord = in.position;
     pbr_input.material.base_color = vec4(col, 1.0);
     pbr_input.material.flags |= pbr_types::STANDARD_MATERIAL_FLAGS_UNLIT_BIT;
     var out: prepass_io::FragmentOutput;
-    out.deferred = pbr_deferred_functions::deferred_gbuffer_from_pbr_input(pbr_input, in.position.z);
+    out.deferred = pbr_deferred_functions::deferred_gbuffer_from_pbr_input(pbr_input);
+    out.deferred_lighting_pass_id = 1u;
     return out;
 #else
     return vec4(col, 1.0);

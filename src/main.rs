@@ -1,14 +1,11 @@
-use std::time::Duration;
-
 use bevy::{
-    asset::ChangeWatcher,
     core_pipeline::{
         fxaa::Fxaa,
         prepass::{DeferredPrepass, DepthPrepass},
     },
     pbr::{DefaultOpaqueRendererMethod, OpaqueRendererMethod},
     prelude::*,
-    reflect::{TypePath, TypeUuid},
+    reflect::TypePath,
     render::render_resource::{AsBindGroup, ShaderRef},
 };
 
@@ -21,10 +18,7 @@ fn main() {
         .insert_resource(Msaa::Off)
         .insert_resource(DefaultOpaqueRendererMethod(OpaqueRendererMethod::Deferred))
         .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
-        .add_plugins(DefaultPlugins.set(AssetPlugin {
-            watch_for_changes: ChangeWatcher::with_delay(Duration::from_millis(200)),
-            ..default()
-        }))
+        .add_plugins(DefaultPlugins.set(AssetPlugin::default()))
         .add_plugins((
             CameraControllerPlugin,
             MaterialPlugin::<GlowyMaterial>::default(),
@@ -136,8 +130,7 @@ impl Material for GlowyMaterial {
 }
 
 // This is the struct that will be passed to your shader
-#[derive(AsBindGroup, Debug, Clone, TypeUuid, TypePath)]
-#[uuid = "717f64fe-6844-4822-8926-e0ed374294c8"]
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct GlowyMaterial {
     #[texture(0)]
     #[sampler(1)]
