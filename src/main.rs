@@ -3,7 +3,7 @@ use bevy::{
         fxaa::Fxaa,
         prepass::{DeferredPrepass, DepthPrepass},
     },
-    pbr::{DefaultOpaqueRendererMethod, OpaqueRendererMethod},
+    pbr::DefaultOpaqueRendererMethod,
     prelude::*,
     reflect::TypePath,
     render::render_resource::{AsBindGroup, ShaderRef},
@@ -16,7 +16,7 @@ use bevy_basic_camera::{CameraController, CameraControllerPlugin};
 fn main() {
     App::new()
         .insert_resource(Msaa::Off)
-        .insert_resource(DefaultOpaqueRendererMethod(OpaqueRendererMethod::Deferred))
+        .insert_resource(DefaultOpaqueRendererMethod::deferred())
         .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
         .add_plugins(DefaultPlugins.set(AssetPlugin::default()))
         .add_plugins((
@@ -146,7 +146,7 @@ fn switch_mode(
     cameras: Query<Entity, With<Camera>>,
 ) {
     if input.just_pressed(KeyCode::Key1) {
-        default_opaque_renderer_method.0 = OpaqueRendererMethod::Deferred;
+        default_opaque_renderer_method.set_to_deferred();
         println!("DefaultOpaqueRendererMethod: Deferred");
         for _ in gmaterials.iter_mut() {}
         for _ in materials.iter_mut() {}
@@ -156,7 +156,7 @@ fn switch_mode(
         }
     }
     if input.just_pressed(KeyCode::Key2) {
-        default_opaque_renderer_method.0 = OpaqueRendererMethod::Forward;
+        default_opaque_renderer_method.set_to_forward();
         println!("DefaultOpaqueRendererMethod: Forward");
         for _ in gmaterials.iter_mut() {}
         for _ in materials.iter_mut() {}

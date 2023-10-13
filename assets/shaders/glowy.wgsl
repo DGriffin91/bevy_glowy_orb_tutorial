@@ -1,7 +1,11 @@
 #import bevy_pbr::mesh_view_bindings view
 #import bevy_pbr::mesh_bindings
-#import bevy_pbr::mesh_vertex_output as mesh_vertex_output
-#import bevy_pbr::prepass_io as prepass_io
+
+#ifdef DEFERRED_PREPASS
+#import bevy_pbr::prepass_io VertexOutput, FragmentOutput
+#else
+#import bevy_pbr::forward_io VertexOutput, FragmentOutput
+#endif
 
 #import bevy_pbr::pbr_deferred_functions as pbr_deferred_functions
 #import bevy_pbr::pbr_types as pbr_types
@@ -26,11 +30,9 @@ fn dir_to_equirectangular(dir: vec3<f32>) -> vec2<f32> {
 }
 
 @fragment
-#ifdef DEFERRED_PREPASS
-fn fragment(in: prepass_io::FragmentInput) -> prepass_io::FragmentOutput {
-#else
-fn fragment(in: mesh_vertex_output::MeshVertexOutput) -> @location(0) vec4<f32> {
-#endif
+fn fragment(in: VertexOutput) -> FragmentOutput {
+    var out: FragmentOutput;
+    
     var N = normalize(in.world_normal);
     var V = normalize(view.world_position.xyz - in.world_position.xyz);
     let NdotV = max(dot(N, V), 0.0001);
@@ -58,11 +60,10 @@ fn fragment(in: mesh_vertex_output::MeshVertexOutput) -> @location(0) vec4<f32> 
     pbr_input.frag_coord = in.position;
     pbr_input.material.base_color = vec4(col, 1.0);
     pbr_input.material.flags |= pbr_types::STANDARD_MATERIAL_FLAGS_UNLIT_BIT;
-    var out: prepass_io::FragmentOutput;
     out.deferred = pbr_deferred_functions::deferred_gbuffer_from_pbr_input(pbr_input);
     out.deferred_lighting_pass_id = 1u;
-    return out;
 #else
-    return vec4(col, 1.0);
+    out.color = vec4(col, 1.0);
 #endif
+    return out;
 }

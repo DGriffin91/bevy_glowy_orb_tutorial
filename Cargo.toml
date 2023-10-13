@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = { git = "https://github.com/DGriffin91/bevy", branch = "deferred" }
+bevy = { git = "https://github.com/bevyengine/bevy", branch = "main" }
 
 # Enable only a small amount of optimization in debug mode
 [profile.dev]
