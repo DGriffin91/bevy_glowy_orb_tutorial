@@ -1,10 +1,10 @@
-#import bevy_pbr::mesh_view_bindings view
+#import bevy_pbr::mesh_view_bindings::view
 #import bevy_pbr::mesh_bindings
-#import bevy_pbr::mesh_vertex_output MeshVertexOutput
-#import bevy_core_pipeline::tonemapping tone_mapping
+#import bevy_pbr::forward_io::VertexOutput
+#import bevy_core_pipeline::tonemapping::tone_mapping
 
 #import bevy_pbr::pbr_types
-#import bevy_pbr::utils PI
+#import bevy_pbr::utils::PI
 
 @group(1) @binding(0)
 var texture: texture_2d<f32>;
@@ -25,7 +25,7 @@ fn dir_to_equirectangular(dir: vec3<f32>) -> vec2<f32> {
 }
 
 @fragment
-fn fragment(in: MeshVertexOutput) -> @location(0) vec4<f32> {
+fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     var N = normalize(in.world_normal);
     var V = normalize(view.world_position.xyz - in.world_position.xyz);
     let NdotV = max(dot(N, V), 0.0001);
