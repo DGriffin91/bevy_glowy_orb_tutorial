@@ -36,11 +36,8 @@ fn setup(
 
     // plane
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Plane {
-            size: 100.0,
-            ..default()
-        })),
-        material: materials.add(Color::rgb(0.1, 0.1, 0.1).into()),
+        mesh: meshes.add(Plane3d::default().mesh().size(100.0, 100.0)),
+        material: materials.add(Color::rgb(0.1, 0.1, 0.1)),
         ..default()
     });
 
@@ -64,10 +61,7 @@ fn setup(
         // spawn orbs
         commands
             .spawn(MaterialMeshBundle {
-                mesh: meshes.add(Mesh::from(shape::UVSphere {
-                    radius: 1.0,
-                    ..default()
-                })),
+                mesh: meshes.add(Sphere::new(1.0).mesh().uv(32, 18)),
                 transform: Transform::from_translation(location),
                 material: material.clone(),
                 ..default()
@@ -76,7 +70,7 @@ fn setup(
                 // child light
                 parent.spawn(PointLightBundle {
                     point_light: PointLight {
-                        intensity: 10000.0,
+                        intensity: 10000.0 * 1000.0,
                         radius: 1.0,
                         color: Color::rgb(0.5, 0.1, 0.0),
                         ..default()
@@ -93,11 +87,14 @@ fn setup(
                 .looking_at(Vec3::new(0.0, 0.5, 0.0), Vec3::Y),
             ..default()
         })
-        .insert(CameraController {
-            orbit_mode: true,
-            orbit_focus: Vec3::new(0.0, 0.5, 0.0),
-            ..default()
-        });
+        .insert(
+            CameraController {
+                orbit_mode: true,
+                orbit_focus: Vec3::new(0.0, 0.5, 0.0),
+                ..default()
+            }
+            .print_controls(),
+        );
 }
 
 /// The Material trait is very configurable, but comes with sensible defaults for all methods.

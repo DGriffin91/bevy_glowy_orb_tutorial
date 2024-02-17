@@ -6,9 +6,9 @@
 #import bevy_pbr::pbr_types
 #import bevy_pbr::utils::PI
 
-@group(1) @binding(0)
+@group(2) @binding(0)
 var texture: texture_2d<f32>;
-@group(1) @binding(1)
+@group(2) @binding(1)
 var texture_sampler: sampler;
 
 fn refract(I: vec3<f32>, N: vec3<f32>, eta: f32) -> vec3<f32> {
