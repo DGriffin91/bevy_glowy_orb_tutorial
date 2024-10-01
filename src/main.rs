@@ -1,21 +1,25 @@
 use bevy::{
+    color::palettes::css::WHITE,
+    pbr::{ExtendedMaterial, MaterialExtension, OpaqueRendererMethod},
     prelude::*,
     reflect::TypePath,
-    render::render_resource::{AsBindGroup, ShaderRef},
+    render::{
+        mesh::{Indices, PrimitiveTopology},
+        render_asset::RenderAssetUsages,
+        render_resource::{AsBindGroup, ShaderRef},
+    },
 };
 
 mod bevy_basic_camera;
-
 use bevy_basic_camera::{CameraController, CameraControllerPlugin};
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
-        .add_plugins((
-            DefaultPlugins,
-            CameraControllerPlugin,
-            MaterialPlugin::<GlowyMaterial>::default(),
-        ))
+        .insert_resource(ClearColor(Color::BLACK))
+        .add_plugins((DefaultPlugins, CameraControllerPlugin))
+        .add_plugins(MaterialPlugin::<
+            ExtendedMaterial<StandardMaterial, FlatNormalMaterial>,
+        >::default())
         .add_systems(Startup, setup)
         .run();
 }
@@ -23,67 +27,33 @@ fn main() {
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut glowmaterials: ResMut<Assets<GlowyMaterial>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    asset_server: Res<AssetServer>,
+    mut flat_materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, FlatNormalMaterial>>>,
 ) {
-    // Load Texture
-    let env_texture = asset_server.load("textures/stone_alley_02_1k.hdr");
-
-    let material = glowmaterials.add(GlowyMaterial {
-        env_texture: Some(env_texture),
-    });
-
-    // plane
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Plane3d::default().mesh().size(100.0, 100.0)),
-        material: materials.add(Color::rgb(0.1, 0.1, 0.1)),
+    // Cube
+    commands.spawn(MaterialMeshBundle {
+        mesh: meshes.add(create_simple_cube_mesh()),
+        transform: Transform::from_xyz(0.0, 0.5, 0.0),
+        material: flat_materials.add(ExtendedMaterial {
+            base: StandardMaterial {
+                base_color: WHITE.into(),
+                opaque_render_method: OpaqueRendererMethod::Auto,
+                ..Default::default()
+            },
+            extension: FlatNormalMaterial {},
+        }),
         ..default()
     });
 
-    // orb locations
-    let locations = [
-        Vec3::new(-0.15, 1.0, -2.0),
-        Vec3::new(1.7, 1.07, -0.61),
-        Vec3::new(0.21, 1.05, 1.99),
-        Vec3::new(-2.16, 1.0, 0.01),
-        Vec3::new(-2.2, 1.0, 2.13),
-        Vec3::new(-1.06, 2.04, 1.02),
-        Vec3::new(1.94, 1.02, 1.16),
-        Vec3::new(0.91, 2.47, 0.83),
-        Vec3::new(0.46, 2.48, -0.81),
-        Vec3::new(-2.05, 0.93, -1.92),
-        Vec3::new(-1.38, 2.46, -0.91),
-        Vec3::new(-0.22, 3.48, 0.18),
-    ];
-
-    for location in locations {
-        // spawn orbs
-        commands
-            .spawn(MaterialMeshBundle {
-                mesh: meshes.add(Sphere::new(1.0).mesh().uv(32, 18)),
-                transform: Transform::from_translation(location),
-                material: material.clone(),
-                ..default()
-            })
-            .with_children(|parent| {
-                // child light
-                parent.spawn(PointLightBundle {
-                    point_light: PointLight {
-                        intensity: 10000.0 * 1000.0,
-                        radius: 1.0,
-                        color: Color::rgb(0.5, 0.1, 0.0),
-                        ..default()
-                    },
-                    ..default()
-                });
-            });
-    }
+    // light
+    commands.spawn(PointLightBundle {
+        transform: Transform::from_xyz(4.0, 8.0, 6.0),
+        ..default()
+    });
 
     // camera
     commands
         .spawn(Camera3dBundle {
-            transform: Transform::from_xyz(8.0, 5.0, 8.0)
+            transform: Transform::from_xyz(3.0, 3.0, 3.0)
                 .looking_at(Vec3::new(0.0, 0.5, 0.0), Vec3::Y),
             ..default()
         })
@@ -97,18 +67,42 @@ fn setup(
         );
 }
 
-/// The Material trait is very configurable, but comes with sensible defaults for all methods.
-/// You only need to implement functions for features that need non-default behavior. See the Material api docs for details!
-impl Material for GlowyMaterial {
+// https://github.com/bevyengine/bevy/blob/v0.14.2/examples/shader/extended_material.rs
+impl MaterialExtension for FlatNormalMaterial {
     fn fragment_shader() -> ShaderRef {
-        "shaders/glowy.wgsl".into()
+        "flat_normal_material.wgsl".into()
     }
 }
 
-// This is the struct that will be passed to your shader
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
-pub struct GlowyMaterial {
-    #[texture(0)]
-    #[sampler(1)]
-    pub env_texture: Option<Handle<Image>>,
+pub struct FlatNormalMaterial {}
+
+fn create_simple_cube_mesh() -> Mesh {
+    let vertices = vec![
+        [-0.5, -0.5, -0.5], // 0: left  bottom back
+        [0.5, -0.5, -0.5],  // 1: right bottom back
+        [0.5, 0.5, -0.5],   // 2: right top    back
+        [-0.5, 0.5, -0.5],  // 3: left  top    back
+        [-0.5, -0.5, 0.5],  // 4: left  bottom front
+        [0.5, -0.5, 0.5],   // 5: right bottom front
+        [0.5, 0.5, 0.5],    // 6: right top    front
+        [-0.5, 0.5, 0.5],   // 7: left  top    front
+    ];
+
+    let indices = vec![
+        // Front face
+        4, 5, 6, 4, 6, 7, // Back face
+        1, 0, 3, 1, 3, 2, // Left face
+        0, 4, 7, 0, 7, 3, // Right face
+        5, 1, 2, 5, 2, 6, // Top face
+        3, 7, 6, 3, 6, 2, // Bottom face
+        4, 0, 1, 4, 1, 5,
+    ];
+
+    Mesh::new(
+        PrimitiveTopology::TriangleList,
+        RenderAssetUsages::MAIN_WORLD | RenderAssetUsages::RENDER_WORLD,
+    )
+    .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vertices)
+    .with_inserted_indices(Indices::U32(indices))
 }

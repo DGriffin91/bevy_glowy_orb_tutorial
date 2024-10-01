@@ -1,9 +1,9 @@
-# Bevy Glowy Orb Tutorial  
+# ~~Bevy Glowy Orb Tutorial~~ A cube with flat geometric normals made from a mesh with no normals.
 
-This is an example repository for [this video](https://www.youtube.com/watch?v=O6A_nVmpvhc).
+`let N = normalize(cross(dpdy(in.world_position.xyz), dpdx(in.world_position.xyz)));`
 
-Depends on bevy 0.13
+Depends on bevy 0.14
 
-In bevy 0.13 the AssetPlugin is no longer used to enable hot reloading, instead use `--features bevy/file_watcher`
+Use `--features bevy/file_watcher` for hot reloading.
 
 ![demo](demo.jpg)
