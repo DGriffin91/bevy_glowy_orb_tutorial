@@ -4,7 +4,7 @@
 #import bevy_core_pipeline::tonemapping::tone_mapping
 
 #import bevy_pbr::pbr_types
-#import bevy_pbr::utils::PI
+#import bevy_render::maths::PI
 
 @group(2) @binding(0)
 var texture: texture_2d<f32>;

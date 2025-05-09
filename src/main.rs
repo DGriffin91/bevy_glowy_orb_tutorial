@@ -10,7 +10,7 @@ use bevy_basic_camera::{CameraController, CameraControllerPlugin};
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
+        .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0)))
         .add_plugins((
             DefaultPlugins,
             CameraControllerPlugin,
@@ -35,11 +35,10 @@ fn setup(
     });
 
     // plane
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Plane3d::default().mesh().size(100.0, 100.0)),
-        material: materials.add(Color::rgb(0.1, 0.1, 0.1)),
-        ..default()
-    });
+    commands.spawn((
+        Mesh3d(meshes.add(Plane3d::default().mesh().size(100.0, 100.0))),
+        MeshMaterial3d(materials.add(Color::srgb(0.1, 0.1, 0.1))),
+    ));
 
     // orb locations
     let locations = [
@@ -60,41 +59,35 @@ fn setup(
     for location in locations {
         // spawn orbs
         commands
-            .spawn(MaterialMeshBundle {
-                mesh: meshes.add(Sphere::new(1.0).mesh().uv(32, 18)),
-                transform: Transform::from_translation(location),
-                material: material.clone(),
-                ..default()
-            })
+            .spawn((
+                Mesh3d(meshes.add(Sphere::new(1.0).mesh().uv(32, 18))),
+                Transform::from_translation(location),
+                MeshMaterial3d(material.clone()),
+            ))
             .with_children(|parent| {
                 // child light
-                parent.spawn(PointLightBundle {
-                    point_light: PointLight {
-                        intensity: 10000.0 * 1000.0,
-                        radius: 1.0,
-                        color: Color::rgb(0.5, 0.1, 0.0),
-                        ..default()
-                    },
+                parent.spawn((PointLight {
+                    intensity: 10000.0 * 1000.0,
+                    radius: 1.0,
+                    color: Color::srgb(0.5, 0.1, 0.0),
                     ..default()
-                });
+                },));
             });
     }
 
     // camera
-    commands
-        .spawn(Camera3dBundle {
-            transform: Transform::from_xyz(8.0, 5.0, 8.0)
-                .looking_at(Vec3::new(0.0, 0.5, 0.0), Vec3::Y),
+    commands.spawn((
+        (
+            Camera3d::default(),
+            Transform::from_xyz(8.0, 5.0, 8.0).looking_at(Vec3::new(0.0, 0.5, 0.0), Vec3::Y),
+        ),
+        CameraController {
+            orbit_mode: true,
+            orbit_focus: Vec3::new(0.0, 0.5, 0.0),
             ..default()
-        })
-        .insert(
-            CameraController {
-                orbit_mode: true,
-                orbit_focus: Vec3::new(0.0, 0.5, 0.0),
-                ..default()
-            }
-            .print_controls(),
-        );
+        }
+        .print_controls(),
+    ));
 }
 
 /// The Material trait is very configurable, but comes with sensible defaults for all methods.
